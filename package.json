@@ -1,0 +1,21 @@
+{
+  "name": "y",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "koa": "^2.5.3",
+    "koa-body": "^4.0.4",
+    "koa-logger": "^3.2.0",
+    "koa-router": "^7.4.0",
+    "koa-session": "^5.9.0",
+    "koa-static": "^5.0.0",
+    "mongoose": "^5.2.17",
+    "nodemailer": "^4.6.8"
+  }
+}
