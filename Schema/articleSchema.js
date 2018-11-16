@@ -11,10 +11,12 @@ const ArticleSchema = new Schema({
     },
     date: {
         type: Date,
-        default: Date.now()
+        default: new Date()
     },
     content: String,
-    imgURL: [String]
+    imgURL: [String],
+    category: String,
+    articleID: String
 }, {
     versionKey: false
 })

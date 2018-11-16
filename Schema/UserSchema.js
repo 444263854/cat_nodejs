@@ -7,9 +7,9 @@ const UserSchema = new Schema({
     username: String,
     password: String,
     name: String,
-    avator: {
+    avatar: {
         type: String,
-        default: '/static/avator/default.png'
+        default: '/avatar/default.png'
     }
 }, {
     versionKey: false

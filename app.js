@@ -3,6 +3,7 @@ const static = require('koa-static')
 const logger = require('koa-logger')
 const KoaBody = require('koa-body')
 const session = require('koa-session')
+const path = require("path")
 
 const app = new Koa();
 const router = require('./routes/router')
@@ -17,18 +18,14 @@ const CONFIG = {
 }
 
 app.use(logger())
-    .use(static('./static'))
+    .use(static(path.join(__dirname, "/static")))
     .use(session(CONFIG, app))
     .use(KoaBody({
         multipart: true,
-        // formidable: {
-        //     uploadDir: path.join(__dirname, '/upload'),
-        //     keepExtensions: true,
-        //     onFileBegin(name, file) {
-        //         let filePath = file.path.split('.')[0]
-        //         file.path = filePath + file.name
-        //     }
-        // }
+        jsonLimit: '9mb',
+        formidable: {
+            maxFieldsSize: 1040000,
+        }
     }))
 app.use(async (ctx, next) => {
     ctx.set({
@@ -41,4 +38,4 @@ app.use(async (ctx, next) => {
 
 app.use(router.routes())
     .use(router.allowedMethods());
-app.listen(3000);
+app.listen(4000);

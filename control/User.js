@@ -16,7 +16,9 @@ exports.register = async (ctx, next) => {
         username = userData.username,
         password = userData.password,
         Code = userData.validateCode;
-
+    if (!ctx.session.code) {
+        return ctx.body = new resModel('', 400, '注册失败，请重试')
+    }
     let codeObj = ctx.session.code;
     //验证码不对||失效
     if (Code != codeObj.code || codeObj.expire < Date.now()) {
@@ -78,7 +80,7 @@ exports.check = async (ctx, next) => {
     } else {
         if (ctx.session.isLogin = true) {
             ctx.body = {
-                avator: '/api' + ctx.session.avator
+                avatar: ctx.session.avatar
             };
         } else {
             ctx.body = false;
@@ -115,18 +117,18 @@ exports.login = async (ctx, next) => {
             //设置cookie,如果cookies的值被改变，取出来的cookies将会变成undefined
             ctx.session.username = username;
             ctx.session.Uid = data._id;
-            ctx.session.avator = data.avator;
+            ctx.session.avatar = data.avatar;
             ctx.session.isLogin = true;
 
             if (remember) {
                 //7天
                 ctx.session.maxAge = 6048e5
             } else {
-                ctx.session.maxAge = ""
+                ctx.session.maxAge = 1000 * 60 * 15
             }
 
             ctx.body = new resModel({
-                avator: data.avator
+                avatar: data.avatar
             }, 200, '登录成功')
         } else {
             ctx.body = new resModel("", 400, '用户名或者密码错误')
@@ -170,7 +172,8 @@ exports.modifyPassword = async (ctx) => {
             password: CryptoHmac(password)
         }, (err, doc) => {
             if (err) return reject(err);
-            //doc==>{ n: 1, nModified: 1, ok: 1 }
+            //doc=={ n: 1, nModified: 1, ok: 1 }
+            delete ctx.session.modifyCode;
             return resolve()
         })
     }).then(() => {

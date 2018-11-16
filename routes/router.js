@@ -11,12 +11,11 @@ async function isLogin(ctx, next) {
         ctx.status = 401;
     } else {
         if (ctx.session.isLogin = true) {
-            next()
+            await next()
         } else {
             ctx.status = 401;
         }
     }
-    next()
 }
 
 router.post('/user/register', User.register)
@@ -29,5 +28,5 @@ router.get('/user/modifyPassword/Code', User.getModifyPasswordCode)
 
 router.post('/article/cat_daily', isLogin, Article.cat_daily)
 router.post('/article/find_host', isLogin, Article.find_host)
-
+router.post('/article/myDaily', isLogin, Article.MyDaily)
 module.exports = router
