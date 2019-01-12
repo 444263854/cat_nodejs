@@ -5,6 +5,7 @@ const Router = require('koa-router')
 const router = new Router()
 const User = require('../control/User')
 const Article = require('../control/article')
+const Comment = require('../control/comment')
 
 async function isLogin(ctx, next) {
     if (ctx.session.isNew) {
@@ -28,5 +29,11 @@ router.get('/user/modifyPassword/Code', User.getModifyPasswordCode)
 
 router.post('/article/cat_daily', isLogin, Article.cat_daily)
 router.post('/article/find_host', isLogin, Article.find_host)
-router.post('/article/myDaily', isLogin, Article.MyDaily)
+router.post('/article/List', isLogin, Article.dailyList)
+router.get('/article/detail', isLogin, Article.articleDetail)
+
+
+router.post('/comment', isLogin, Comment.postComment)
+
+router.get('/comment', isLogin, Comment.getComment)
 module.exports = router

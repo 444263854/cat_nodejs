@@ -2,7 +2,6 @@ const {
     db
 } = require('../Schema/dbConnect')
 const articleSchema = require('../Schema/articleSchema')
-const userSchema = require('../Schema/UserSchema')
 const articleDoc = db.model('articles', articleSchema)
 const fs = require('fs');
 const path = require('path')
@@ -14,11 +13,20 @@ const resModel = require('../util/resModel')
 
 async function SaveArticle(ctx, next) {
     var body = ctx.request.body,
+        abstract = '',
+        Re_checkCon = /<.*?>.*?<\/.*?>/gm,
         imgDataUrlList = body.imgList,
         imgPathList = [],
         articleID = getRandomID(8),
         imgPath = '/userArticles/' + ctx.session.Uid + '/article/' + articleID,
         promiseList = [];
+    //检查内容是否大于200
+    //大于200截取摘要
+    var result = Re_checkCon.exec(body.content);
+    while (abstract.length < 200 && result) {
+        abstract += result[0]
+        result = Re_checkCon.exec(body.content);
+    }
     await dirExists(path.join(__dirname, '../static', imgPath));
     imgDataUrlList.forEach(imgFile => {
         let data = imgFile.dataUrl.split(",")[1],
@@ -38,9 +46,10 @@ async function SaveArticle(ctx, next) {
         author: ctx.session.Uid,
         title: body.title,
         content: body.content,
+        abstract: abstract,
         category: body.category,
-        date: new Date(),
         imgURL: imgPathList,
+        commentCount: 0,
         articleID
     })
     //发生错误删除保存的图片
@@ -58,7 +67,7 @@ async function SaveArticle(ctx, next) {
         ctx.body = new resModel('', 200, "发布成功")
     }).catch((err) => {
         console.log(err);
-        fs.rmdir(imgPath, function (err) {
+        fs.rmdir(path.join(__dirname, '../static', imgPath), function (err) {
             if (err) {
                 console.log(err)
             }
@@ -69,31 +78,83 @@ async function SaveArticle(ctx, next) {
 exports.cat_daily = SaveArticle
 exports.find_host = SaveArticle
 
-exports.MyDaily = async (ctx, next) => {
-    var page = ctx.request.body.page;
-    await new Promise((resolve, reject) => {
-            articleDoc.find({
-                    author: ctx.session.Uid
-                })
-                .skip((page - 1) * 5)
-                .limit(5)
-                .then(function (data) {
-                    resolve(data)
-                }).catch(err => {
-                    console.error(err)
-                })
-        })
-        .then((docs) => {
-            var res = [];
-            docs.forEach(val => {
-                res.push({
-                    title: val.title,
-                    datetime: val.date,
-                    content: val.content,
-                    imgURL: val.imgURL[0],
-                    articleID: val.articleID
-                })
+exports.dailyList = async (ctx, next) => {
+    var rq = ctx.request.body,
+        page = rq.page,
+        category = rq.category,
+        needTotal = rq.total,
+        total = 0,
+        contentList = [],
+        promiseList = [];
+    if (needTotal) {
+        var filterCount = new Promise((resolve, reject) => {
+            articleDoc.countDocuments({
+                author: ctx.session.Uid,
+                category
+            }).then(count => {
+                total = count
+                resolve()
+            }).catch(err => {
+                reject(err)
             })
-            ctx.body = new resModel(res, 200)
         })
+        promiseList.push(filterCount);
+    }
+    var findData = new Promise((resolve, reject) => {
+        articleDoc.find({
+                author: ctx.session.Uid,
+                category
+            })
+            .sort("-created")
+            .skip((page - 1) * 5)
+            .limit(5)
+            .then(function (docs) {
+                docs.forEach(val => {
+                    contentList.push({
+                        title: val.title,
+                        datetime: val.created,
+                        abstract: val.abstract,
+                        imgURL: val.imgURL[0],
+                        articleID: val.articleID,
+                        commentCount: val.commentCount
+                    })
+                })
+                resolve()
+            }).catch(err => {
+                reject(err)
+            })
+    })
+    promiseList.push(findData)
+
+    await Promise.all(promiseList).then(() => {
+            ctx.body = new resModel({
+                articleList: contentList,
+                total: total
+            }, 200)
+        })
+        .catch(err => {
+            console.error(err)
+            ctx.body = new resModel("", 500, "服务器出错")
+        })
+}
+
+exports.articleDetail = async (ctx, next) => {
+    let articleID = ctx.query.articleID;
+
+    await articleDoc.findOne({
+        articleID
+    }).then(con => {
+        //评论数据
+        var data = {
+            title: con.title,
+            content: con.content,
+            time: con.created,
+            imgList: con.imgURL,
+            commentCount: con.commentCount
+        }
+        ctx.body = new resModel(data, 200)
+    }).catch(err => {
+        console.error(err);
+        ctx.body = new resModel('', 500, '数据库错误')
+    })
 }

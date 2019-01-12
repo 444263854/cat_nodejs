@@ -9,16 +9,19 @@ const ArticleSchema = new Schema({
         type: ObjectId,
         ref: 'users'
     },
-    date: {
-        type: Date,
-        default: new Date()
-    },
     content: String,
     imgURL: [String],
     category: String,
-    articleID: String
+    articleID: String,
+    abstract: String,
+    commentCount: Number,
+    likedCount: Number,
+    collectedCount: Number
 }, {
-    versionKey: false
+    versionKey: false,
+    timestamps: {
+        createdAt: 'created'
+    }
 })
 
 module.exports = ArticleSchema
