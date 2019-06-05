@@ -27,10 +27,9 @@ router.get('/user/logout', User.logout)
 router.put('/user/modifyPassword', User.modifyPassword)
 router.get('/user/modifyPassword/Code', User.getModifyPasswordCode)
 
-router.post('/article/cat_daily', isLogin, Article.cat_daily)
-router.post('/article/find_host', isLogin, Article.find_host)
+router.post('/article/saveArticle', isLogin, Article.SaveArticle)
 router.post('/article/List', isLogin, Article.dailyList)
-router.get('/article/detail', isLogin, Article.articleDetail)
+router.get('/article/:id', isLogin, Article.articleDetail)
 
 
 router.post('/comment', isLogin, Comment.postComment)

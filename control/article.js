@@ -1,8 +1,5 @@
-const {
-    db
-} = require('../Schema/dbConnect')
-const articleSchema = require('../Schema/articleSchema')
-const articleDoc = db.model('articles', articleSchema)
+const errorHandler = require('../log/logHandler.js')
+const articleModel = require('../Schema/articleModel')
 const fs = require('fs');
 const path = require('path')
 const getRandomID = require('../util/randomID')
@@ -11,7 +8,7 @@ const {
 } = require('../util/dirExists')
 const resModel = require('../util/resModel')
 
-async function SaveArticle(ctx, next) {
+exports.SaveArticle = async function SaveArticle(ctx, next) {
     var body = ctx.request.body,
         abstract = '',
         Re_checkCon = /<.*?>.*?<\/.*?>/gm,
@@ -35,14 +32,13 @@ async function SaveArticle(ctx, next) {
         promiseList.push(new Promise((resolve, reject) => {
             fs.writeFile(path.join(__dirname, '../static', imgPath, imgName), data, "base64", (err, data) => {
                 if (err) {
-                    console.log(err);
                     reject(err)
                 }
                 resolve(true)
             })
         }))
     });
-    const _article = new articleDoc({
+    const _article = new articleModel({
         author: ctx.session.Uid,
         title: body.title,
         content: body.content,
@@ -58,7 +54,6 @@ async function SaveArticle(ctx, next) {
             _article.save((err) => {
                 if (err) {
                     reject(err)
-                    console.log(err)
                 };
                 resolve()
             })
@@ -66,42 +61,39 @@ async function SaveArticle(ctx, next) {
     }).then(() => {
         ctx.body = new resModel('', 200, "发布成功")
     }).catch((err) => {
-        console.log(err);
+        errorHandler(err);
         fs.rmdir(path.join(__dirname, '../static', imgPath), function (err) {
             if (err) {
-                console.log(err)
+                errorHandler(err)
             }
         })
         ctx.body = new resModel('', 500, "发布失败，服务器错误")
     })
 }
-exports.cat_daily = SaveArticle
-exports.find_host = SaveArticle
+
 
 exports.dailyList = async (ctx, next) => {
     var rq = ctx.request.body,
-        page = rq.page,
+        page = Math.max(0, rq.page),
         category = rq.category,
-        needTotal = rq.total,
         total = 0,
-        contentList = [],
-        promiseList = [];
-    if (needTotal) {
-        var filterCount = new Promise((resolve, reject) => {
-            articleDoc.countDocuments({
-                author: ctx.session.Uid,
-                category
-            }).then(count => {
-                total = count
-                resolve()
-            }).catch(err => {
+        contentList = [];
+
+    var countDocs = new Promise((resolve, reject) => {
+        articleModel.countDocuments({
+            author: ctx.session.Uid,
+            category
+        }, function (err, count) {
+            if (err) {
                 reject(err)
-            })
+            }
+            total = count;
+            resolve()
         })
-        promiseList.push(filterCount);
-    }
+    })
+
     var findData = new Promise((resolve, reject) => {
-        articleDoc.find({
+        articleModel.find({
                 author: ctx.session.Uid,
                 category
             })
@@ -120,28 +112,24 @@ exports.dailyList = async (ctx, next) => {
                     })
                 })
                 resolve()
-            }).catch(err => {
-                reject(err)
             })
     })
-    promiseList.push(findData)
-
-    await Promise.all(promiseList).then(() => {
+    await Promise.all([countDocs, findData]).then(() => {
             ctx.body = new resModel({
                 articleList: contentList,
                 total: total
             }, 200)
         })
         .catch(err => {
-            console.error(err)
+            errorHandler(err)
             ctx.body = new resModel("", 500, "服务器出错")
         })
 }
 
 exports.articleDetail = async (ctx, next) => {
-    let articleID = ctx.query.articleID;
+    let articleID = ctx.params.id;
 
-    await articleDoc.findOne({
+    await articleModel.findOne({
         articleID
     }).then(con => {
         //评论数据
@@ -154,7 +142,7 @@ exports.articleDetail = async (ctx, next) => {
         }
         ctx.body = new resModel(data, 200)
     }).catch(err => {
-        console.error(err);
-        ctx.body = new resModel('', 500, '数据库错误')
+        errorHandler(err);
+        ctx.body = new resModel('', 500, '服务器错误')
     })
 }

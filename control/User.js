@@ -1,8 +1,8 @@
 const {
     db
 } = require('../Schema/dbConnect')
-const UserSchema = require('../Schema/UserSchema')
-const UserDoc = db.model('users', UserSchema)
+const errorHandler = require('../log/logHandler.js')
+const UserModel = require('../Schema/UserModel.js')
 const resModel = require('../util/resModel')
 const CryptoHmac = require('../util/crypto')
 const nodemailer = require('../util/nodemailer')
@@ -21,19 +21,19 @@ exports.register = async (ctx, next) => {
     }
     let codeObj = ctx.session.code;
     //验证码不对||失效
-    if (Code != codeObj.code || codeObj.expire < Date.now()) {
+    if (Code !== codeObj.code || codeObj.expire < Date.now()) {
         return ctx.body = new resModel('', 401, '验证码不正确')
     }
     await new Promise((resolve, reject) => {
-        UserDoc.find({
+        UserModel.find({
             username
         }, function (err, docs) {
             if (err) return reject(err)
             //用户已经存在
-            if (docs.length !== 0) return resolve("");
+            if (docs.length !== 0) return resolve(false);
 
             //用户名不存在
-            const _user = new UserDoc({
+            const _user = new UserModel({
                 name,
                 username,
                 password: CryptoHmac(password)
@@ -54,7 +54,7 @@ exports.register = async (ctx, next) => {
             ctx.body = new resModel("", 400, "用户名已经存在")
         }
     }).catch(err => {
-        console.error('register--->', err);
+        errorHandler(err);
         ctx.body = new resModel('', 400, '注册失败，请重试')
     })
 
@@ -64,7 +64,11 @@ exports.register = async (ctx, next) => {
 exports.getRegisterCode = async (ctx, next) => {
 
     let Code = getRandomCode();
-    await nodemailer(ctx.query.username, Code)
+    try {
+        await nodemailer(ctx.query.username, Code)
+    } catch (err) {
+        errorHandler(err);
+    }
     ctx.session.code = {
         code: Code,
         expire: Date.now() + 1000 * 61
@@ -79,9 +83,9 @@ exports.check = async (ctx, next) => {
         ctx.body = false;
     } else {
         if (ctx.session.isLogin = true) {
-            ctx.body = {
+            ctx.body = new resModel({
                 avatar: ctx.session.avatar
-            };
+            }, 200, '验证码已发送至您的邮箱')
         } else {
             ctx.body = false;
         }
@@ -97,9 +101,10 @@ exports.login = async (ctx, next) => {
         remember = _user.remember;
 
     await new Promise((resolve, reject) => {
-        UserDoc.findOne({
+        UserModel.findOne({
             username
         }, (err, data) => {
+            console.log("TCL: exports.login -> data", data)
             if (err) {
                 return reject(err)
             }
@@ -152,6 +157,7 @@ exports.getModifyPasswordCode = async (ctx) => {
         code: Code,
         expire: Date.now() + 1000 * 61
     }
+    console.log("TCL: exports.getModifyPasswordCode -> ctx.session.modifyCode", ctx.session.isNew)
     ctx.body = new resModel('', 200, '验证码已发送至您的邮箱')
 }
 
@@ -160,13 +166,14 @@ exports.modifyPassword = async (ctx) => {
         username = userData.username,
         password = userData.password,
         Code = userData.validateCode;
-    let codeObj = ctx.session.modifyCode;
+    let codeObj = ctx.session.modifyCode
+    console.log("TCL: exports.modifyPassword -> ctx.session", ctx.session, ctx.session.isNew)
     //验证码不对||失效
-    if (Code != codeObj.code || codeObj.expire < Date.now()) {
+    if (!codeObj || Code != codeObj.code || codeObj.expire < Date.now()) {
         return ctx.body = new resModel('', 401, '验证码不正确')
     }
     await new Promise((resolve, reject) => {
-        UserDoc.updateOne({
+        UserModel.updateOne({
             username
         }, {
             password: CryptoHmac(password)

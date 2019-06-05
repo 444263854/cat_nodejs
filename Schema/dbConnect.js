@@ -1,8 +1,9 @@
 const mongoose = require('mongoose')
-mongoose.set('useFindAndModify', false);
-const Schema = mongoose.Schema;
+const config = require("config")
 
-const db = mongoose.createConnection('mongodb://localhost:27017/cat', {
+mongoose.set('useFindAndModify', false);
+
+const db = mongoose.createConnection(config.get('db'), {
     useNewUrlParser: true
 })
 
@@ -15,7 +16,5 @@ db.on('open', () => {
     console.log('连接数据库成功');
 })
 
-module.exports = {
-    db,
-    Schema
-}
+
+exports.db = db;
