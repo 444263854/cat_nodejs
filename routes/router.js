@@ -1,13 +1,4 @@
-/**
- * 定义路由
- */
-const Router = require('koa-router')
-const router = new Router()
-const User = require('../control/User')
-const Article = require('../control/article')
-const Comment = require('../control/comment')
-
-async function isLogin(ctx, next) {
+exports.isLogin = async function isLogin(ctx, next) {
     if (ctx.session.isNew) {
         ctx.status = 401;
     } else {
@@ -19,20 +10,18 @@ async function isLogin(ctx, next) {
     }
 }
 
-router.post('/user/register', User.register)
-router.get('/user/register/Code', User.getRegisterCode)
-router.get('/user/check', User.check)
-router.post('/user/login', User.login)
-router.get('/user/logout', User.logout)
-router.put('/user/modifyPassword', User.modifyPassword)
-router.get('/user/modifyPassword/Code', User.getModifyPasswordCode)
+const {
+    UserRouter
+} = require('./user.js');
+const {
+    ArticleRouter
+} = require('./article.js');
+const {
+    CommentRouter
+} = require('./comment.js');
 
-router.post('/article/saveArticle', isLogin, Article.SaveArticle)
-router.post('/article/List', isLogin, Article.dailyList)
-router.get('/article/:id', isLogin, Article.articleDetail)
-
-
-router.post('/comment', isLogin, Comment.postComment)
-
-router.get('/comment', isLogin, Comment.getComment)
-module.exports = router
+module.exports = [
+    UserRouter,
+    ArticleRouter,
+    CommentRouter
+]

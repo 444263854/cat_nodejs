@@ -104,7 +104,6 @@ exports.login = async (ctx, next) => {
         UserModel.findOne({
             username
         }, (err, data) => {
-            console.log("TCL: exports.login -> data", data)
             if (err) {
                 return reject(err)
             }
@@ -157,7 +156,6 @@ exports.getModifyPasswordCode = async (ctx) => {
         code: Code,
         expire: Date.now() + 1000 * 61
     }
-    console.log("TCL: exports.getModifyPasswordCode -> ctx.session.modifyCode", ctx.session.isNew)
     ctx.body = new resModel('', 200, '验证码已发送至您的邮箱')
 }
 
@@ -167,7 +165,6 @@ exports.modifyPassword = async (ctx) => {
         password = userData.password,
         Code = userData.validateCode;
     let codeObj = ctx.session.modifyCode
-    console.log("TCL: exports.modifyPassword -> ctx.session", ctx.session, ctx.session.isNew)
     //验证码不对||失效
     if (!codeObj || Code != codeObj.code || codeObj.expire < Date.now()) {
         return ctx.body = new resModel('', 401, '验证码不正确')

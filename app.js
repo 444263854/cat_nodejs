@@ -6,7 +6,7 @@ const session = require('koa-session')
 const path = require("path")
 
 const app = new Koa();
-const router = require('./routes/router')
+const routers = require('./routes/router')
 
 app.keys = ['zhangyong']
 
@@ -44,6 +44,10 @@ app.use(async (ctx, next) => {
     await next();
 })
 
-app.use(router.routes())
-    .use(router.allowedMethods());
+for (let i = 0; i < routers.length; i++) {
+    const router = routers[i];
+    app.use(router.routes())
+        .use(router.allowedMethods());
+}
+
 app.listen(4000);
