@@ -5,7 +5,7 @@ const fs = require('fs');
 const resModel = require('../util/resModel')
 const path = require('path')
 
-exports.postComment = async (ctx, next) => {
+async function postCommentRouter(ctx, next) {
     let comment = ctx.request.body.comment,
         articleID = ctx.query.articleID;
     const _comment = new commentModel({
@@ -40,36 +40,90 @@ exports.postComment = async (ctx, next) => {
         })
 
 }
-exports.getComment = async (ctx, next) => {
-    let query = ctx.query,
-        articleID = query.articleID,
-        page = query.page,
-        count = query.count;
-
-    await commentModel.find({
-            article: articleID
-        })
-        .sort('-created')
-        .skip(page * count)
-        .limit(+count) //把string类型转换为==>number
-        .populate({
-            path: 'author',
-            select: 'avatar username'
-        })
-        .then(docs => {
-            let dataArr = [];
-            docs.forEach(val => {
-                dataArr.push({
-                    avatar: val.author.avatar,
-                    username: val.author.username,
-                    time: val.created,
-                    content: val.content
-                })
-            })
+async function getCommentRouter(ctx, next) {
+    let query = ctx.query;
+    try {
+        await getComment(query).then((dataArr) => {
             ctx.body = new resModel(dataArr, 200, 'success')
-        })
-        .catch(err => {
-            errorHandler(err);
-            ctx.body = new resModel(err, 500, '服务器错误')
-        })
+        });
+    } catch (error) {
+        console.log("TCL: exports.getCommentRouter -> error", error)
+        ctx.status = 500;
+    }
+}
+
+
+async function getComment(query) {
+    const {
+        articleID,
+        page,
+        count
+    } = query;
+    try {
+        let docs = await commentModel.aggregate([{
+                $match: {
+                    article: articleID
+                }
+            },
+            {
+                $sort: {
+                    'created': -1
+                }
+            },
+            {
+                $skip: page * count
+            },
+            {
+                $limit: +count
+            },
+            {
+                $lookup: {
+                    from: 'users',
+                    pipeline: [{
+                        $project: {
+                            _id: 0,
+                            avatar: "$avatar",
+                            username: "$username"
+                        },
+                    }],
+                    as: 'author'
+                }
+            },
+            {
+                $unwind: "$author"
+            }
+        ])
+
+        // let docs = await commentModel.find({
+        //         article: articleID
+        //     })
+        //     .sort('-created')
+        //     .skip(page * count)
+        //     .limit(+count) //把string类型转换为==>number
+        //     .populate({
+        //         path: 'author',
+        //         select: 'avatar username'
+        //     })
+
+        let dataArr = [];
+        docs.forEach(val => {
+            dataArr.push({
+                avatar: val.author.avatar,
+                username: val.author.username,
+                time: val.created,
+                content: val.content
+            })
+        });
+        return dataArr;
+
+    } catch (error) {
+        errorHandler(error);
+        throw new Error(error)
+    }
+}
+
+module.exports = {
+    getComment,
+    getCommentRouter,
+    postCommentRouter
 }

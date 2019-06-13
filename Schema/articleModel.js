@@ -19,7 +19,8 @@ const ArticleSchema = new Schema({
     abstract: String,
     commentCount: Number,
     likedCount: Number,
-    collectedCount: Number
+    collectedCount: Number,
+    address: String
 }, {
     versionKey: false,
     timestamps: {

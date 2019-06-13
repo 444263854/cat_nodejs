@@ -4,6 +4,9 @@ const fs = require('fs');
 const path = require('path')
 const getRandomID = require('../util/randomID')
 const {
+    getComment
+} = require('./comment.js')
+const {
     dirExists
 } = require('../util/dirExists')
 const resModel = require('../util/resModel')
@@ -128,21 +131,48 @@ exports.dailyList = async (ctx, next) => {
 
 exports.articleDetail = async (ctx, next) => {
     let articleID = ctx.params.id;
-
-    await articleModel.findOne({
-        articleID
-    }).then(con => {
-        //评论数据
-        var data = {
-            title: con.title,
-            content: con.content,
-            time: con.created,
-            imgList: con.imgURL,
-            commentCount: con.commentCount
-        }
-        ctx.body = new resModel(data, 200)
-    }).catch(err => {
-        errorHandler(err);
-        ctx.body = new resModel('', 500, '服务器错误')
+    let commentPromise = new Promise((resolve, reject) => {
+        getComment({
+                count: 10,
+                page: 0,
+                articleID
+            })
+            .then((comment) => {
+                resolve(comment)
+            })
+            .catch((err) => {
+                reject(err);
+            })
     })
+
+    let articlePromise = new Promise((resolve, reject) => {
+        articleModel.findOne({
+            articleID
+        }).then(con => {
+            //评论数据
+            var article = {
+                title: con.title,
+                content: con.content,
+                time: con.created,
+                imgList: con.imgURL,
+                commentCount: con.commentCount
+            }
+            resolve(article)
+        }).catch(err => {
+            reject(err);
+        })
+    })
+
+    await Promise.all([commentPromise, articlePromise])
+        .then(dataArr => {
+
+            ctx.body = new resModel({
+                comment: dataArr[0],
+                article: dataArr[1]
+            }, 200)
+        })
+        .catch(err => {
+            errorHandler(err)
+            ctx.status = 500
+        })
 }

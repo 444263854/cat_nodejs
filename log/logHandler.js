@@ -3,7 +3,8 @@ const path = require('path')
 
 module.exports = async function errorHandler(message) {
     try {
-        var buffer = Buffer.from(message.toString() + '\n');
+        let DateString = '[' + new Date().toLocaleString() + ']: \n';
+        var buffer = Buffer.from(DateString + message.toString() + '\n');
         fs.open(path.join(__dirname, './errorlog.txt'), 'a+', function (err, fd) {
             if (err) {
                 throw new Error(err);

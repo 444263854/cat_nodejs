@@ -1,1 +1,10 @@
 ReferenceError: docs is not defined
+MongooseError: Mongoose 5.x disallows passing a spread of operators to `Model.aggregate()`. Instead of `Model.aggregate({ $match }, { $skip })`, do `Model.aggregate([{ $match }, { $skip }])`
+MongooseError: Mongoose 5.x disallows passing a spread of operators to `Model.aggregate()`. Instead of `Model.aggregate({ $match }, { $skip })`, do `Model.aggregate([{ $match }, { $skip }])`
+MongoError: $lookup argument 'foreignField: [ "avatar", "username" ]' must be a string, is type array
+MongoError: must specify 'as' field for a $lookup
+MongoError: must specify 'as' field for a $lookup
+MongoError: $lookup argument 'foreignField: [ "avatar", " username" ]' must be a string, is type array
+MongoError: $lookup with 'pipeline' may not specify 'localField' or 'foreignField'
+MongoError: $lookup with a 'let' argument must also specify 'pipeline'
+MongoError: A pipeline stage specification object must contain exactly one field.

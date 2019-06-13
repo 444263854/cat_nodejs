@@ -9,7 +9,7 @@ router = new Router({
     prefix: "/comment"
 })
 
-router.post('', isLogin, Comment.postComment)
-router.get('', isLogin, Comment.getComment)
+router.post('/', isLogin, Comment.postCommentRouter)
+router.get('/', isLogin, Comment.getCommentRouter)
 
 exports.CommentRouter = router
